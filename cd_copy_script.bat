@@ -10,8 +10,9 @@ echo CD/DVD Copy Script
 echo ========================================
 echo.
 
-REM Prompt for CD/DVD drive letter
-set /p DRIVE_LETTER="Enter CD/DVD drive letter (e.g., D, E): "
+REM Prompt for CD/DVD drive letter with default
+set "DRIVE_LETTER=F"
+set /p DRIVE_LETTER="Enter CD/DVD drive letter [default: F]: "
 set "CD_DRIVE=%DRIVE_LETTER%:"
 
 REM Check if drive exists
@@ -21,8 +22,9 @@ if not exist %CD_DRIVE%\ (
     goto SETUP
 )
 
-REM Prompt for target base folder
-set /p TARGET_BASE="Enter target base folder path (e.g., C:\CDBackups): "
+REM Prompt for target base folder with default
+set "TARGET_BASE=H:\cd-dvd"
+set /p TARGET_BASE="Enter target base folder path [default: H:\cd-dvd]: "
 
 REM Remove trailing backslash if present
 if "%TARGET_BASE:~-1%"=="\" set "TARGET_BASE=%TARGET_BASE:~0,-1%"
@@ -114,6 +116,10 @@ if %ERRORLEVEL% GEQ 8 (
     echo Copy completed successfully!
     echo ========================================
     echo Files copied to: %TARGET_FOLDER%
+    echo.
+    echo Ejecting disc...
+    powershell -Command "(New-Object -COMObject Shell.Application).Namespace(17).ParseName('%CD_DRIVE%').InvokeVerb('Eject')"
+    echo Disc ejected. Please insert next CD/DVD.
 )
 
 echo.
