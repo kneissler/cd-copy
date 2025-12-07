@@ -1,0 +1,132 @@
+@echo off
+setlocal enabledelayedexpansion
+
+REM CD/DVD Copy Script
+REM This script copies the contents of a CD/DVD to a named folder
+
+:SETUP
+echo ========================================
+echo CD/DVD Copy Script
+echo ========================================
+echo.
+
+REM Prompt for CD/DVD drive letter
+set /p DRIVE_LETTER="Enter CD/DVD drive letter (e.g., D, E): "
+set "CD_DRIVE=%DRIVE_LETTER%:"
+
+REM Check if drive exists
+if not exist %CD_DRIVE%\ (
+    echo ERROR: Drive %CD_DRIVE% not found!
+    echo.
+    goto SETUP
+)
+
+REM Prompt for target base folder
+set /p TARGET_BASE="Enter target base folder path (e.g., C:\CDBackups): "
+
+REM Remove trailing backslash if present
+if "%TARGET_BASE:~-1%"=="\" set "TARGET_BASE=%TARGET_BASE:~0,-1%"
+
+REM Create base folder if it doesn't exist
+if not exist "%TARGET_BASE%" (
+    echo Creating base folder: %TARGET_BASE%
+    mkdir "%TARGET_BASE%"
+)
+
+echo.
+echo Setup complete!
+echo CD/DVD Drive: %CD_DRIVE%
+echo Target Folder: %TARGET_BASE%
+echo.
+pause
+
+:COPY_LOOP
+cls
+echo ========================================
+echo CD/DVD Copy Script
+echo ========================================
+echo CD/DVD Drive: %CD_DRIVE%
+echo Target Folder: %TARGET_BASE%
+echo ========================================
+echo.
+
+REM List contents of CD/DVD
+echo Contents of %CD_DRIVE%:
+echo ----------------------------------------
+dir %CD_DRIVE%\ /b
+echo ----------------------------------------
+echo.
+
+REM Get folder name from user
+set /p FOLDER_NAME="Enter name for this CD/DVD backup folder (or 'quit' to exit): "
+
+REM Check if user wants to quit
+if /i "%FOLDER_NAME%"=="quit" (
+    echo.
+    echo Exiting script...
+    goto END
+)
+
+REM Check if folder name is empty
+if "%FOLDER_NAME%"=="" (
+    echo ERROR: Folder name cannot be empty!
+    echo.
+    pause
+    goto COPY_LOOP
+)
+
+REM Create target folder path
+set "TARGET_FOLDER=%TARGET_BASE%\%FOLDER_NAME%"
+
+REM Check if folder already exists
+if exist "%TARGET_FOLDER%" (
+    echo.
+    echo WARNING: Folder "%TARGET_FOLDER%" already exists!
+    set /p OVERWRITE="Overwrite? (Y/N): "
+    if /i not "!OVERWRITE!"=="Y" (
+        echo Skipping...
+        echo.
+        pause
+        goto COPY_LOOP
+    )
+    echo Removing existing folder...
+    rd /s /q "%TARGET_FOLDER%"
+)
+
+REM Create target folder
+echo.
+echo Creating folder: %TARGET_FOLDER%
+mkdir "%TARGET_FOLDER%"
+
+REM Copy files using robocopy (more reliable than xcopy)
+echo.
+echo Copying files from %CD_DRIVE% to %TARGET_FOLDER%...
+echo.
+robocopy %CD_DRIVE%\ "%TARGET_FOLDER%" /E /COPY:DAT /R:2 /W:5 /V /ETA
+
+REM Check robocopy exit code (0-7 are success, 8+ are errors)
+if %ERRORLEVEL% GEQ 8 (
+    echo.
+    echo ERROR: Copy failed with error code %ERRORLEVEL%
+) else (
+    echo.
+    echo ========================================
+    echo Copy completed successfully!
+    echo ========================================
+    echo Files copied to: %TARGET_FOLDER%
+)
+
+echo.
+echo Please insert the next CD/DVD or type 'quit' to exit.
+echo.
+pause
+
+REM Loop back for next CD/DVD
+goto COPY_LOOP
+
+:END
+echo.
+echo Thank you for using CD/DVD Copy Script!
+echo.
+pause
+endlocal
