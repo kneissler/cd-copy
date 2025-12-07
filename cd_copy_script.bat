@@ -93,7 +93,7 @@ if exist "%TARGET_FOLDER%" (
         goto FIND_UNIQUE_NAME
     )
     echo.
-    echo Folder "%FOLDER_NAME%" already exists, using "%FINAL_FOLDER_NAME%" instead.
+    echo Folder "%FOLDER_NAME%" already exists, using "!FINAL_FOLDER_NAME!" instead.
 )
 
 REM Create target folder
