@@ -78,22 +78,22 @@ if /i "%FOLDER_NAME%"=="quit" (
 REM Use volume label as default if folder name is empty
 if "%FOLDER_NAME%"=="" set "FOLDER_NAME=%VOL_LABEL%"
 
-REM Create target folder path
+REM Create target folder path with counter if needed
 set "TARGET_FOLDER=%TARGET_BASE%\%FOLDER_NAME%"
+set "FINAL_FOLDER_NAME=%FOLDER_NAME%"
 
-REM Check if folder already exists
+REM Check if folder already exists and append counter if needed
 if exist "%TARGET_FOLDER%" (
-    echo.
-    echo WARNING: Folder "%TARGET_FOLDER%" already exists!
-    set /p OVERWRITE="Overwrite? (Y/N): "
-    if /i not "!OVERWRITE!"=="Y" (
-        echo Skipping...
-        echo.
-        pause
-        goto COPY_LOOP
+    set "COUNTER=1"
+    :FIND_UNIQUE_NAME
+    set "FINAL_FOLDER_NAME=%FOLDER_NAME%_!COUNTER!"
+    set "TARGET_FOLDER=%TARGET_BASE%\!FINAL_FOLDER_NAME!"
+    if exist "!TARGET_FOLDER!" (
+        set /a COUNTER+=1
+        goto FIND_UNIQUE_NAME
     )
-    echo Removing existing folder...
-    rd /s /q "%TARGET_FOLDER%"
+    echo.
+    echo Folder "%FOLDER_NAME%" already exists, using "%FINAL_FOLDER_NAME%" instead.
 )
 
 REM Create target folder
