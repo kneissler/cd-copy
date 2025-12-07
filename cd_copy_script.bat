@@ -59,8 +59,14 @@ dir %CD_DRIVE%\ /b
 echo ----------------------------------------
 echo.
 
-REM Get folder name from user
-set /p FOLDER_NAME="Enter name for this CD/DVD backup folder (or 'quit' to exit): "
+REM Get volume label from CD/DVD
+for /f "tokens=5*" %%a in ('vol %CD_DRIVE% 2^>nul ^| find "Volume in drive"') do set "VOL_LABEL=%%b"
+if "%VOL_LABEL%"=="" set "VOL_LABEL=UNNAMED_DISC"
+
+REM Get folder name from user with volume label as default
+echo Volume label: %VOL_LABEL%
+set "FOLDER_NAME="
+set /p FOLDER_NAME="Enter name for this CD/DVD backup folder [default: %VOL_LABEL%] (or 'quit' to exit): "
 
 REM Check if user wants to quit
 if /i "%FOLDER_NAME%"=="quit" (
@@ -69,13 +75,8 @@ if /i "%FOLDER_NAME%"=="quit" (
     goto END
 )
 
-REM Check if folder name is empty
-if "%FOLDER_NAME%"=="" (
-    echo ERROR: Folder name cannot be empty!
-    echo.
-    pause
-    goto COPY_LOOP
-)
+REM Use volume label as default if folder name is empty
+if "%FOLDER_NAME%"=="" set "FOLDER_NAME=%VOL_LABEL%"
 
 REM Create target folder path
 set "TARGET_FOLDER=%TARGET_BASE%\%FOLDER_NAME%"
