@@ -121,9 +121,9 @@ if "%DISC_TYPE%"=="AUDIO" (
     echo Ripping audio CD to WAV files...
     echo Target: %TARGET_FOLDER%
     echo.
-    powershell -ExecutionPolicy Bypass -Command "$cdDrive = '%CD_DRIVE%'; $targetFolder = '%TARGET_FOLDER%'; try { $wmp = New-Object -ComObject WMPlayer.OCX; $cd = $wmp.cdromCollection.item(0); if ($cd) { $playlist = $cd.Playlist; if ($playlist -and $playlist.count -gt 0) { Write-Host \"Found $($playlist.count) tracks on audio CD\"; for ($i = 0; $i -lt $playlist.count; $i++) { $track = $playlist.item($i); $trackNum = ($i + 1).ToString('00'); $fileName = \"Track_$trackNum.wav\"; $filePath = Join-Path $targetFolder $fileName; Write-Host \"Ripping Track $trackNum...\"; $wmp.settings.volume = 0; $wmp.currentPlaylist = $playlist; $wmp.controls.currentItem = $track; Start-Sleep -Milliseconds 500; } Write-Host \"Audio CD rip completed!\"; } else { Write-Host \"No audio tracks found or disc not ready.\"; exit 1; } } else { Write-Host \"CD drive not found or disc not ready.\"; exit 1; } [System.Runtime.Interopservices.Marshal]::ReleaseComObject($wmp) | Out-Null; exit 0; } catch { Write-Host \"Error: $_\"; exit 1; }"
+    powershell -ExecutionPolicy Bypass -File "%~dp0rip_audio_cd.ps1" "%CD_DRIVE%" "%TARGET_FOLDER%"
 
-    if %ERRORLEVEL% EQU 0 (
+    if !ERRORLEVEL! EQU 0 (
         echo.
         echo ========================================
         echo Audio CD rip completed successfully!
@@ -135,28 +135,9 @@ if "%DISC_TYPE%"=="AUDIO" (
         echo Disc ejected. Please insert next CD/DVD.
     ) else (
         echo.
-        echo ========================================
-        echo Audio CD rip failed!
-        echo ========================================
-        echo.
-        echo Trying alternative method using PowerShell...
-        echo.
-        powershell -ExecutionPolicy Bypass -File "%~dp0rip_audio_cd.ps1" "%CD_DRIVE%" "%TARGET_FOLDER%"
-        if !ERRORLEVEL! EQU 0 (
-            echo.
-            echo ========================================
-            echo Audio CD rip completed successfully!
-            echo ========================================
-            echo WAV files saved to: %TARGET_FOLDER%
-            echo.
-            echo Ejecting disc...
-            powershell -Command "(New-Object -COMObject Shell.Application).Namespace(17).ParseName('%CD_DRIVE%').InvokeVerb('Eject')"
-            echo Disc ejected. Please insert next CD/DVD.
-        ) else (
-            echo.
-            echo ERROR: Audio CD rip failed. You may need additional software.
-            echo Consider installing: Windows Media Player or FFmpeg for audio CD ripping.
-        )
+        echo ERROR: Audio CD rip failed. You may need additional software.
+        echo Consider installing FFmpeg for audio CD ripping.
+        echo See README.md for installation instructions.
     )
 ) else (
     REM Copy data CD/DVD files using robocopy
