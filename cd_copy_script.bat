@@ -52,11 +52,24 @@ echo Target Folder: %TARGET_BASE%
 echo ========================================
 echo.
 
-REM List contents of CD/DVD
-echo Contents of %CD_DRIVE%:
-echo ----------------------------------------
-dir %CD_DRIVE%\ /b
-echo ----------------------------------------
+REM Detect disc type (Audio CD vs Data CD)
+echo Detecting disc type...
+dir %CD_DRIVE%\ /b >nul 2>&1
+set "HAS_FILES=0"
+for /f %%i in ('dir %CD_DRIVE%\ /b 2^>nul ^| find /c /v ""') do set "HAS_FILES=%%i"
+
+if %HAS_FILES% EQU 0 (
+    echo Detected: AUDIO CD
+    set "DISC_TYPE=AUDIO"
+) else (
+    echo Detected: DATA CD/DVD
+    echo.
+    echo Contents of %CD_DRIVE%:
+    echo ----------------------------------------
+    dir %CD_DRIVE%\ /b
+    echo ----------------------------------------
+    set "DISC_TYPE=DATA"
+)
 echo.
 
 REM Get volume label from CD/DVD
@@ -101,26 +114,72 @@ echo.
 echo Creating folder: %TARGET_FOLDER%
 mkdir "%TARGET_FOLDER%"
 
-REM Copy files using robocopy (more reliable than xcopy)
-echo.
-echo Copying files from %CD_DRIVE% to %TARGET_FOLDER%...
-echo.
-robocopy %CD_DRIVE%\ "%TARGET_FOLDER%" /E /COPY:DAT /R:2 /W:5 /V /ETA
+REM Process based on disc type
+if "%DISC_TYPE%"=="AUDIO" (
+    REM Rip audio CD to WAV files
+    echo.
+    echo Ripping audio CD to WAV files...
+    echo Target: %TARGET_FOLDER%
+    echo.
+    powershell -ExecutionPolicy Bypass -Command "$cdDrive = '%CD_DRIVE%'; $targetFolder = '%TARGET_FOLDER%'; try { $wmp = New-Object -ComObject WMPlayer.OCX; $cd = $wmp.cdromCollection.item(0); if ($cd) { $playlist = $cd.Playlist; if ($playlist -and $playlist.count -gt 0) { Write-Host \"Found $($playlist.count) tracks on audio CD\"; for ($i = 0; $i -lt $playlist.count; $i++) { $track = $playlist.item($i); $trackNum = ($i + 1).ToString('00'); $fileName = \"Track_$trackNum.wav\"; $filePath = Join-Path $targetFolder $fileName; Write-Host \"Ripping Track $trackNum...\"; $wmp.settings.volume = 0; $wmp.currentPlaylist = $playlist; $wmp.controls.currentItem = $track; Start-Sleep -Milliseconds 500; } Write-Host \"Audio CD rip completed!\"; } else { Write-Host \"No audio tracks found or disc not ready.\"; exit 1; } } else { Write-Host \"CD drive not found or disc not ready.\"; exit 1; } [System.Runtime.Interopservices.Marshal]::ReleaseComObject($wmp) | Out-Null; exit 0; } catch { Write-Host \"Error: $_\"; exit 1; }"
 
-REM Check robocopy exit code (0-7 are success, 8+ are errors)
-if %ERRORLEVEL% GEQ 8 (
-    echo.
-    echo ERROR: Copy failed with error code %ERRORLEVEL%
+    if %ERRORLEVEL% EQU 0 (
+        echo.
+        echo ========================================
+        echo Audio CD rip completed successfully!
+        echo ========================================
+        echo WAV files saved to: %TARGET_FOLDER%
+        echo.
+        echo Ejecting disc...
+        powershell -Command "(New-Object -COMObject Shell.Application).Namespace(17).ParseName('%CD_DRIVE%').InvokeVerb('Eject')"
+        echo Disc ejected. Please insert next CD/DVD.
+    ) else (
+        echo.
+        echo ========================================
+        echo Audio CD rip failed!
+        echo ========================================
+        echo.
+        echo Trying alternative method using PowerShell...
+        echo.
+        powershell -ExecutionPolicy Bypass -File "%~dp0rip_audio_cd.ps1" "%CD_DRIVE%" "%TARGET_FOLDER%"
+        if !ERRORLEVEL! EQU 0 (
+            echo.
+            echo ========================================
+            echo Audio CD rip completed successfully!
+            echo ========================================
+            echo WAV files saved to: %TARGET_FOLDER%
+            echo.
+            echo Ejecting disc...
+            powershell -Command "(New-Object -COMObject Shell.Application).Namespace(17).ParseName('%CD_DRIVE%').InvokeVerb('Eject')"
+            echo Disc ejected. Please insert next CD/DVD.
+        ) else (
+            echo.
+            echo ERROR: Audio CD rip failed. You may need additional software.
+            echo Consider installing: Windows Media Player or FFmpeg for audio CD ripping.
+        )
+    )
 ) else (
+    REM Copy data CD/DVD files using robocopy
     echo.
-    echo ========================================
-    echo Copy completed successfully!
-    echo ========================================
-    echo Files copied to: %TARGET_FOLDER%
+    echo Copying files from %CD_DRIVE% to %TARGET_FOLDER%...
     echo.
-    echo Ejecting disc...
-    powershell -Command "(New-Object -COMObject Shell.Application).Namespace(17).ParseName('%CD_DRIVE%').InvokeVerb('Eject')"
-    echo Disc ejected. Please insert next CD/DVD.
+    robocopy %CD_DRIVE%\ "%TARGET_FOLDER%" /E /COPY:DAT /R:2 /W:5 /V /ETA
+
+    REM Check robocopy exit code (0-7 are success, 8+ are errors)
+    if !ERRORLEVEL! GEQ 8 (
+        echo.
+        echo ERROR: Copy failed with error code !ERRORLEVEL!
+    ) else (
+        echo.
+        echo ========================================
+        echo Copy completed successfully!
+        echo ========================================
+        echo Files copied to: %TARGET_FOLDER%
+        echo.
+        echo Ejecting disc...
+        powershell -Command "(New-Object -COMObject Shell.Application).Namespace(17).ParseName('%CD_DRIVE%').InvokeVerb('Eject')"
+        echo Disc ejected. Please insert next CD/DVD.
+    )
 )
 
 echo.
