@@ -74,7 +74,7 @@ set /a CURRENT=0
 for /f "usebackq delims=" %%F in ("%FILE_LIST%") do (
     set /a CURRENT+=1
     set "FILE=%%F"
-    set "RELPATH=!FILE:%SOURCE%=!"
+    call set "RELPATH=%%FILE:%SOURCE%=%%"
     set "DESTFILE=%DEST%!RELPATH!"
 
     :: Create destination directory

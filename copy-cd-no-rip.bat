@@ -63,7 +63,7 @@ echo.
 for /r "%SOURCE%" %%F in (*) do (
     set /a TOTAL+=1
     set "FILE=%%F"
-    set "RELPATH=!FILE:%SOURCE%=!"
+    call set "RELPATH=%%FILE:%SOURCE%=%%"
     set "DESTFILE=%DEST%!RELPATH!"
 
     :: Create destination directory if needed
