@@ -14,8 +14,10 @@ echo ====================================
 echo.
 
 :: Get source and destination from user
-set /p SOURCE="Enter source path (e.g., D:\): "
-set /p DEST="Enter destination path: "
+set "SOURCE=F:"
+set /p SOURCE="Enter source path [default: F:]: "
+set "DEST=H:\cd-dvd"
+set /p DEST="Enter destination path [default: H:\cd-dvd]: "
 
 :: Validate paths
 if not exist "%SOURCE%" (
