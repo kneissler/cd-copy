@@ -230,6 +230,8 @@ set "REPORT=%DEST%\copy_report_!TIMESTAMP!.txt"
     echo Skipped ^(existing^):     !SKIPPED!
     echo.
     if !TOTAL! GTR 0 (
+        set /a SUCCESS_PCT=!SUCCESS!*100/!TOTAL!
+        set /a FAILED_PCT=!FAILED!*100/!TOTAL!
         echo Success Rate: !SUCCESS_PCT!%%
         echo Failure Rate: !FAILED_PCT!%%
         echo.
